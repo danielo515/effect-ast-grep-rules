@@ -1,0 +1,28 @@
+id: prefer-schema-decode
+language: TypeScript
+severity: hint
+message: >-
+  Prefer `Schema.decode` when the input type is already known at compile time.
+note: >-
+  `Schema.decodeUnknown` accepts `unknown` and adds a runtime type-narrowing
+  step. If the input is already typed as the schema's `From` type (e.g. you've
+  already parsed JSON elsewhere or are re-validating an internal value), use
+  `Schema.decode` for a tighter type signature. Use `decodeUnknown` only at
+  trust boundaries (HTTP body, env vars, untyped JSON).
+rule:
+  any:
+    - pattern: Schema.decodeUnknown($$$)
+    - pattern: Schema.decodeUnknownSync($$$)
+    - pattern: Schema.decodeUnknownEither($$$)
+    - pattern: Schema.decodeUnknownPromise($$$)
+files:
+  - "**/*.ts"
+  - "**/*.tsx"
+ignores:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  # trust-boundary code typically lives here — adjust to your project layout
+  - "**/http/**"
+  - "**/api/**"
+  - "**/routes/**"
+  - "**/handlers/**"

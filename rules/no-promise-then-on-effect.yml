@@ -1,0 +1,18 @@
+id: no-promise-then-on-effect
+language: TypeScript
+severity: error
+message: >-
+  Don't call `.then()` / `.catch()` / `.finally()` on an Effect-returning value.
+note: >-
+  An `Effect` is a description of a computation, not a `Promise`. Calling
+  `.then()` on it is almost always a mistake — either the value is already a
+  Promise (run the Effect first with `Effect.runPromise`) or you meant to
+  `pipe(eff, Effect.flatMap(...))`.
+rule:
+  any:
+    - pattern: Effect.$METHOD($$$).then($$$)
+    - pattern: Effect.$METHOD($$$).catch($$$)
+    - pattern: Effect.$METHOD($$$).finally($$$)
+files:
+  - "**/*.ts"
+  - "**/*.tsx"

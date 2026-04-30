@@ -1,0 +1,31 @@
+id: no-effect-run-in-library
+language: TypeScript
+severity: warning
+message: >-
+  Avoid `Effect.runSync` / `Effect.runPromise` / `Effect.runFork` outside of
+  entrypoint files. Return the `Effect` value and let the program edge run it.
+note: >-
+  Running an Effect inside a library module forces eager execution and discards
+  the dependency requirements (`R`) of the Effect, which defeats the purpose of
+  the type-level effect tracking. Compose with `Effect.flatMap`, `Effect.gen`,
+  or `pipe` instead and run only at the program edge (e.g. `main.ts`,
+  `bin/*.ts`).
+rule:
+  any:
+    - pattern: Effect.runSync($$$)
+    - pattern: Effect.runPromise($$$)
+    - pattern: Effect.runPromiseExit($$$)
+    - pattern: Effect.runFork($$$)
+    - pattern: Effect.runSyncExit($$$)
+files:
+  - "**/*.ts"
+  - "**/*.tsx"
+ignores:
+  - "**/main.ts"
+  - "**/main.tsx"
+  - "**/index.ts"
+  - "**/bin/**"
+  - "**/scripts/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.bench.ts"

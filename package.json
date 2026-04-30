@@ -1,0 +1,24 @@
+{
+  "name": "effect-ast-grep-rules",
+  "version": "0.1.0",
+  "description": "ast-grep rules for TypeScript projects using the Effect library",
+  "private": true,
+  "scripts": {
+    "scan": "ast-grep scan",
+    "scan:json": "ast-grep scan --json=pretty",
+    "scan:errors": "ast-grep scan --error",
+    "test": "ast-grep test",
+    "test:update": "ast-grep test -U"
+  },
+  "devDependencies": {
+    "@ast-grep/cli": "^0.42.1"
+  },
+  "keywords": [
+    "ast-grep",
+    "effect",
+    "effect-ts",
+    "typescript",
+    "linting"
+  ],
+  "license": "MIT"
+}

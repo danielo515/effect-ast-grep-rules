@@ -1,0 +1,18 @@
+id: no-bare-try-catch
+language: TypeScript
+severity: warning
+message: >-
+  Prefer `Effect.try` / `Effect.tryPromise` over bare `try/catch`.
+note: >-
+  Bare `try/catch` discards the typed error channel that Effect provides. Wrap
+  the throwing call in `Effect.try({ try, catch })` (synchronous) or
+  `Effect.tryPromise({ try, catch })` (async) so the error becomes part of the
+  `E` type parameter and stays visible to callers.
+rule:
+  kind: try_statement
+files:
+  - "**/*.ts"
+  - "**/*.tsx"
+ignores:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"

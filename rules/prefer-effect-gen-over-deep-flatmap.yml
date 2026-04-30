@@ -1,0 +1,15 @@
+id: prefer-effect-gen-over-deep-flatmap
+language: TypeScript
+severity: hint
+message: >-
+  Three or more chained `Effect.flatMap` calls are easier to read as
+  `Effect.gen(function* () { ... })`.
+note: >-
+  Long `flatMap` chains (or deeply nested `pipe(... Effect.flatMap(...))`
+  pyramids) hide control flow. `Effect.gen` reads top-to-bottom like normal
+  imperative code and keeps the typed `R` / `E` channels intact.
+rule:
+  pattern: pipe($$$, Effect.flatMap($$_), $$$, Effect.flatMap($$_), $$$, Effect.flatMap($$_), $$$)
+files:
+  - "**/*.ts"
+  - "**/*.tsx"

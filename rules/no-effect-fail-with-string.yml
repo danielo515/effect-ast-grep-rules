@@ -1,0 +1,20 @@
+id: no-effect-fail-with-string
+language: TypeScript
+severity: warning
+message: >-
+  Don't `Effect.fail` with a bare string. Use a tagged error.
+note: >-
+  String errors lose information and collide across modules. Define a tagged
+  error class (`class MyError extends Data.TaggedError("MyError")<{...}> {}`
+  or `Schema.TaggedError`) and `Effect.fail(new MyError(...))`. The tag becomes
+  the discriminator the rest of your program matches on.
+rule:
+  pattern: Effect.fail($S)
+constraints:
+  S:
+    any:
+      - kind: string
+      - kind: template_string
+files:
+  - "**/*.ts"
+  - "**/*.tsx"

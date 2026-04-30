@@ -1,0 +1,5 @@
+ruleDirs:
+  - rules
+testConfigs:
+  - testDir: tests/__snapshots__
+    snapshotDir: tests/__snapshots__/__snapshots__

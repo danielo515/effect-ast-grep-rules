@@ -1,0 +1,30 @@
+id: prefer-option-from-nullable
+language: TypeScript
+severity: warning
+message: >-
+  Ternary wrapping into Option — use `Option.fromNullable` instead.
+note: >-
+  `$X ? Option.some($X) : Option.none()` hand-rolls what
+  `Option.fromNullable($X)` already does, and the truthiness variant is
+  subtly different: it maps `0`, `""`, `false` and `NaN` to `Option.none()`
+  too, which is rarely what you want. If the value can only be null or
+  undefined, replace with `Option.fromNullable($X)`. If you genuinely want
+  falsy-to-none semantics, use `Option.liftPredicate(Boolean)` so the intent
+  is explicit.
+
+  ast-grep cannot see types, so this rule matches the shape only — review
+  the truthiness case before applying the mechanical rewrite.
+rule:
+  any:
+    # truthiness check (flags even non-nullable values — see note)
+    - pattern: "$X ? Option.some($X) : Option.none()"
+    # explicit nullish checks, both orientations
+    - pattern: "$X == null ? Option.none() : Option.some($X)"
+    - pattern: "$X === null ? Option.none() : Option.some($X)"
+    - pattern: "$X === undefined ? Option.none() : Option.some($X)"
+    - pattern: "$X != null ? Option.some($X) : Option.none()"
+    - pattern: "$X !== null ? Option.some($X) : Option.none()"
+    - pattern: "$X !== undefined ? Option.some($X) : Option.none()"
+files:
+  - "**/*.ts"
+  - "**/*.tsx"

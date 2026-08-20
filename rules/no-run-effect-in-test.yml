@@ -1,0 +1,48 @@
+id: no-run-effect-in-test
+language: typescript
+severity: error
+files:
+  - "**/*.test.ts"
+rule:
+  any:
+    - pattern: Effect.runSync
+    - pattern: Effect.runSyncExit
+    - pattern: Effect.runPromise
+    - pattern: Effect.runPromiseExit
+    - pattern: Effect.runFork
+  inside:
+    stopBy: end
+    any:
+      - pattern: it($$$)
+      - pattern: it.only($$$)
+      - pattern: it.skip($$$)
+      - pattern: it.fails($$$)
+      - pattern: it.each($$$)($$$)
+      - pattern: test($$$)
+      - pattern: test.only($$$)
+      - pattern: test.skip($$$)
+      - pattern: test.each($$$)($$$)
+message: "Effect.run* inside a plain vitest test — use it.effect from @effect/vitest instead"
+note: |
+  Manually running effects inside `it`/`test` bypasses @effect/vitest's
+  managed test runtime (TestClock, proper error rendering, scoped
+  resources). Write the test as an effect and let the runner execute it:
+
+  // ❌ Bad
+  it("decodes", () => {
+    const result = Effect.runSync(Schema.decodeUnknown(MySchema)(input));
+    expect(result).toEqual(input);
+  });
+
+  // ✅ Good
+  import { it } from "@effect/vitest";
+  it.effect("decodes", () =>
+    Effect.gen(function* () {
+      const result = yield* Schema.decodeUnknown(MySchema)(input);
+      expect(result).toEqual(input);
+    }),
+  );
+
+  Effect.runPromise at a genuine JS boundary (module-level setup, an async
+  callback handed to a non-Effect SDK) is fine — this rule only fires
+  inside test bodies.

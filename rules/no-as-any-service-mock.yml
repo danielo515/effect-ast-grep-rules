@@ -1,0 +1,35 @@
+id: no-as-any-service-mock
+language: typescript
+severity: error
+rule:
+  any:
+    - pattern: Layer.succeed($SERVICE)($IMPL as any)
+    - pattern: Layer.succeed($SERVICE)($IMPL as unknown as $T)
+    - pattern: Layer.succeed($SERVICE, $IMPL as any)
+    - pattern: Layer.succeed($SERVICE, $IMPL as unknown as $T)
+    - pattern: Effect.provideService($SERVICE, $IMPL as any)
+    - pattern: Effect.provideService($SERVICE, $IMPL as unknown as $T)
+message: "Service mock cast with `as any` — construct the service class instead"
+note: |
+  Casting an object literal to `any` to fake a service defeats the type
+  system: the mock silently drifts when the service gains, removes or
+  changes a method, and nothing fails until runtime. Construct the service
+  class so the compiler checks the shape:
+
+  // ❌ Bad
+  const testMiliaMessagesService = Layer.succeed(MiliaMessagesService)({
+    listInbox: () => Effect.die("unused"),
+    searchMessages: () => Effect.die("unused"),
+  } as any);
+
+  // ✅ Good
+  const testMiliaMessagesService = Layer.succeed(MiliaMessagesService)(
+    new MiliaMessagesService({
+      listInbox: () => Effect.die("unused"),
+      searchMessages: () => Effect.die("unused"),
+    }),
+  );
+
+  Methods you do not exercise can still be stubbed with `Effect.die("unused")`
+  — the point is that the constructor makes a service change break the mock
+  at compile time.

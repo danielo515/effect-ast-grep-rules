@@ -7,20 +7,62 @@ These rules catch patterns that compile cleanly but sidestep the guarantees
 Effect is meant to give you — typed errors, deferred execution, dependency
 tracking, and explicit control flow.
 
+> **Compatibility:** these rules have only been tested against **Effect v3**.
+> They may or may not apply cleanly to other major versions — review the
+> patterns before relying on them elsewhere.
+
+## What is ast-grep, and why not just oxlint?
+
+[ast-grep](https://ast-grep.github.io) is a structural search-and-lint tool:
+you write patterns that look like the code you want to match
+(`Effect.runSync($$$)`), and it matches against the AST — not text — so
+formatting, whitespace, and variable names don't matter. Rules are plain YAML
+files with a pattern, a severity, a message, and an explanatory note; no
+plugin API, no build step.
+
+[oxlint](https://oxc.rs) is excellent as a general-purpose linter — extremely
+fast, with hundreds of curated built-in rules. But writing your *own* rules
+for it means writing a JS plugin against a linter API. ast-grep shines exactly
+where oxlint doesn't:
+
+- **Project-specific conventions** — "never call `X.y` outside directory Z",
+  "use our wrapper instead of this library API". A YAML pattern takes minutes;
+  a linter plugin takes an afternoon.
+- **Library-idiom enforcement** (this repo) — rules like "no `throw` inside
+  `Effect.gen`" exist in no stock rule set.
+- **Rules as documentation** — each YAML file carries a `note:` explaining the
+  *why* with bad/good examples, printed with every finding.
+- **Codemods** — a rule can carry a `fix:`, turning it into an applyable
+  rewrite.
+
+The two compose well: keep oxlint (or ESLint) for generic correctness rules,
+and add ast-grep for the rules that are yours.
+
 ## What's in here
 
 | Rule | Severity | Catches |
 | --- | --- | --- |
 | `no-effect-run-in-library` | warning | `Effect.runSync` / `runPromise` / `runFork` outside entrypoint files |
+| `no-runpromise-in-effect` | error | `Effect.run*` *inside* `Effect.gen` / `Effect.fn` bodies |
 | `no-bare-try-catch` | warning | `try/catch` blocks that should be `Effect.try` / `Effect.tryPromise` |
+| `no-throw-in-effect` | error | `throw` inside `Effect.gen` — use `Effect.fail` with a tagged error |
 | `no-promise-then-on-effect` | error | `.then()` / `.catch()` / `.finally()` chained onto `Effect.*` |
-| `prefer-effect-gen-over-deep-flatmap` | hint | `pipe` chains with 3+ `Effect.flatMap` calls |
-| `prefer-schema-decode` | hint | `Schema.decodeUnknown*` outside trust-boundary directories |
+| `no-silent-catch` | warning | `Effect.catchAll` that recovers without logging the error |
 | `no-effect-fail-with-string` | warning | `Effect.fail("...")` instead of a tagged error |
+| `tagged-error-location` | warning | `new Error(...)` inside Effect code — use `Schema.TaggedError` |
+| `no-console-log` | warning | `console.*` — use `Effect.log*`, which integrates with tracing |
+| `no-drift-fs` | warning | direct `node:fs` imports — use `@effect/platform` `FileSystem` |
+| `no-as-any-service-mock` | error | service mocks cast with `as any` — construct the service class |
+| `no-schema-type-helper` | error (fixable) | `Schema.Schema.Type<typeof X>` — use `typeof X.Type` |
+| `prefer-schema-decode` | hint | `Schema.decodeUnknown*` outside trust-boundary directories |
+| `prefer-effect-gen-over-deep-flatmap` | hint | `pipe` chains with 3+ `Effect.flatMap` calls |
+| `no-run-effect-in-test` | error | `Effect.run*` in test files — use `it.effect` from `@effect/vitest` |
+| `no-either-guard-assertion` | error | boolean `Either.isLeft` guards in tests — deep-assert the whole `Either` |
 
-Every rule has a matching test file under [`tests/`](./tests). Open the rule
-YAML to see the rationale (`note:` field) — these are documentation as much as
-linting.
+Rules are plain YAML — copy the ones you want, delete the ones you don't.
+Open a rule file to see the rationale (`note:` field) — these are
+documentation as much as linting. Some rules have matching test files under
+[`tests/`](./tests).
 
 ## Install
 

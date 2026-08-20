@@ -1,0 +1,30 @@
+id: tagged-error-location
+language: typescript
+severity: warning
+rule:
+  any:
+    - pattern: new Error($$$ARGS)
+    - pattern: new TypeError($$$ARGS)
+    - pattern: new RangeError($$$ARGS)
+  inside:
+    any:
+      - pattern: Effect.gen(function* () { $$$BODY })
+      - pattern: Effect.gen(function* (_) { $$$BODY })
+      - pattern: Effect.fn($$$ARGS)($$$BODY)
+      - pattern: Effect.try($$$)
+      - pattern: Effect.tryPromise($$$)
+message: "Plain Error in Effect code — use Schema.TaggedError for typed, locatable errors"
+note: |
+  Plain Error/TypeError/RangeError instances lack a _tag field, making them
+  impossible to match with Effect.catchTag and hard to trace in logs.
+  Use Schema.TaggedError to create typed, tagged errors with location context:
+
+  // ❌ Bad
+  yield* Effect.fail(new Error("user not found"));
+
+  // ✅ Good
+  class UserNotFoundError extends Schema.TaggedError<UserNotFoundError>()(
+    "UserNotFoundError",
+    { userId: Schema.String }
+  ) {}
+  yield* Effect.fail(new UserNotFoundError({ userId }));

@@ -1,0 +1,20 @@
+id: no-console-log
+language: typescript
+severity: warning
+rule:
+  pattern: console.$METHOD($$$ARGS)
+constraints:
+  METHOD:
+    regex: "^(log|warn|error|info|debug|trace)$"
+message: "Avoid console.$METHOD — use Effect.log* instead, which integrates with tracing"
+note: |
+  Direct console usage bypasses Effect's logging and tracing infrastructure.
+  Use Effect's logging functions instead:
+
+  // ❌ Bad
+  console.log("Processing request", requestId);
+  console.error("Something failed", error);
+
+  // ✅ Good
+  yield* Effect.log("Processing request").pipe(Effect.annotateLogs("requestId", requestId));
+  yield* Effect.logError("Something failed", error);

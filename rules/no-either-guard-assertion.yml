@@ -1,0 +1,40 @@
+id: no-either-guard-assertion
+language: typescript
+severity: error
+files:
+  - "**/*.test.ts"
+rule:
+  any:
+    - pattern: expect(Either.$PRED($X)).$METHOD($$$ARGS)
+    - pattern: if (Either.$PRED($X)) $BODY
+constraints:
+  PRED:
+    regex: "^(isLeft|isRight)$"
+  METHOD:
+    regex: "^(toBe|toEqual|toStrictEqual|toBeTruthy|toBeFalsy)$"
+message: "Boolean Either guard in a test — assert deep equality on the whole Either instead"
+note: |
+  Asserting Either.isLeft/isRight and then branching splits one logical
+  assertion into several and silently skips the inner expects when the
+  guard is false. Assert on the whole Either in one deep comparison:
+
+  // ❌ Bad
+  expect(Either.isLeft(result)).toBe(true);
+  if (Either.isLeft(result)) {
+    expect(result.left).toBeInstanceOf(TransientProviderError);
+    expect(result.left.errorType).toBe("empty_stream");
+  }
+
+  // ✅ Good
+  expect(result).toEqual(
+    Either.left(new TransientProviderError({ message: "...", errorType: "empty_stream" })),
+  );
+
+  If the expected value is not fully constructible (live `cause`, dynamic
+  message), extract the channel loudly and match partially:
+
+  // ✅ Good (fallback)
+  import { expectLeft } from "@/__tests__/expect-either.js";
+  const left = expectLeft(result); // expect.unreachable on a Right
+  expect(left).toBeInstanceOf(TransientProviderError);
+  expect(left).toMatchObject({ statusCode: 503 });

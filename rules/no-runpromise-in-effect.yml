@@ -1,0 +1,30 @@
+id: no-runpromise-in-effect
+language: typescript
+severity: error
+rule:
+  any:
+    - pattern: Effect.runPromise($$$)
+    - pattern: Effect.runSync($$$)
+    - pattern: Effect.runFork($$$)
+  inside:
+    any:
+      - pattern: Effect.gen(function* () { $$$BODY })
+      - pattern: Effect.gen(function* (_) { $$$BODY })
+      - pattern: Effect.fn($$$ARGS)($$$BODY)
+message: "Effect.runPromise/runSync/runFork inside Effect code — these only belong at entry points"
+note: |
+  Running effects inside other effects breaks the Effect composition model.
+  Instead, use yield* to compose effects:
+
+  // ❌ Bad
+  Effect.gen(function* () {
+    const result = await Effect.runPromise(someEffect);
+  })
+
+  // ✅ Good
+  Effect.gen(function* () {
+    const result = yield* someEffect;
+  })
+
+  Effect.runPromise should only be used at the application entry point
+  (e.g., in index.ts or runtime.ts).

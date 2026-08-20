@@ -1,0 +1,34 @@
+id: no-silent-catch
+language: typescript
+severity: warning
+rule:
+  any:
+    - pattern: Effect.catchAll($EFFECT, ($ERR) => $RECOVERY)
+    - pattern: Effect.catchAll($EFFECT, ($ERR) => { $$$RECOVERY })
+    - pattern: |
+        $EFFECT.pipe(Effect.catchAll(($ERR) => $RECOVERY))
+    - pattern: |
+        $EFFECT.pipe(Effect.catchAll(($ERR) => { $$$RECOVERY }))
+  not:
+    has:
+      stopBy: end
+      any:
+        - pattern: Effect.log($$$)
+        - pattern: Effect.logError($$$)
+        - pattern: Effect.logWarning($$$)
+        - pattern: Effect.logDebug($$$)
+        - pattern: Effect.logInfo($$$)
+message: "Effect.catchAll without logging — always log before recovering from errors"
+note: |
+  Silently catching all errors hides failures and makes debugging difficult.
+  Always log the error before recovering:
+
+  // ❌ Bad
+  Effect.catchAll(effect, (e) => Effect.succeed(fallback))
+
+  // ✅ Good
+  Effect.catchAll(effect, (e) =>
+    Effect.logError("Operation failed, using fallback", e).pipe(
+      Effect.map(() => fallback)
+    )
+  )

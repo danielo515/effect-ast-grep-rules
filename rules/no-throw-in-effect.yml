@@ -1,0 +1,24 @@
+id: no-throw-in-effect
+language: typescript
+severity: error
+rule:
+  pattern: throw $ERR
+  inside:
+    any:
+      - pattern: Effect.gen(function* () { $$$BODY })
+      - pattern: Effect.gen(function* (_) { $$$BODY })
+      - pattern: Effect.fn($$$ARGS)($$$BODY)
+message: "throw inside Effect.gen — use Effect.fail instead"
+note: |
+  Throwing inside Effect.gen bypasses the typed error channel.
+  Use Effect.fail to surface errors in the Effect type system:
+
+  // ❌ Bad
+  Effect.gen(function* () {
+    if (!valid) throw new Error("Invalid input");
+  })
+
+  // ✅ Good
+  Effect.gen(function* () {
+    if (!valid) yield* Effect.fail(new InvalidInputError({ input }));
+  })

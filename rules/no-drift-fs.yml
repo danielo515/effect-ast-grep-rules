@@ -1,0 +1,27 @@
+id: no-drift-fs
+language: typescript
+severity: warning
+rule:
+  any:
+    - pattern: import $$$IMPORTS from "node:fs"
+    - pattern: import $$$IMPORTS from "node:fs/promises"
+    - pattern: import $$$IMPORTS from "fs"
+    - pattern: import $$$IMPORTS from "fs/promises"
+    - pattern: require("node:fs")
+    - pattern: require("node:fs/promises")
+    - pattern: require("fs")
+    - pattern: require("fs/promises")
+message: "Direct node:fs import — use @effect/platform FileSystem service instead"
+note: |
+  Direct filesystem access bypasses Effect's dependency injection and testability.
+  Use the FileSystem service from @effect/platform:
+
+  // ❌ Bad
+  import fs from "node:fs";
+  const content = fs.readFileSync("file.txt", "utf-8");
+
+  // ✅ Good
+  import { FileSystem } from "@effect/platform";
+  const content = yield* FileSystem.FileSystem.pipe(
+    Effect.flatMap(fs => fs.readFileString("file.txt"))
+  );

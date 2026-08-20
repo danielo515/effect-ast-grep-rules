@@ -1,0 +1,18 @@
+id: no-schema-type-helper
+language: typescript
+severity: error
+rule:
+  pattern:
+    context: "type $N = Schema.Schema.Type<typeof $SCHEMA>"
+    selector: generic_type
+fix: typeof $SCHEMA.Type
+message: "Schema.Schema.Type<typeof X> — use `typeof X.Type` instead"
+note: |
+  Deriving a type via Schema.Schema.Type<typeof X> is the old style.
+  Use the schema's `.Type` accessor directly:
+
+  // ❌ Bad
+  export type TextPart = Schema.Schema.Type<typeof TextPart>;
+
+  // ✅ Good
+  export type TextPart = typeof TextPart.Type;

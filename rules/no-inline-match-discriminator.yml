@@ -1,0 +1,36 @@
+id: no-inline-match-discriminator
+language: TypeScript
+severity: error
+message: >-
+  Inline `Match.discriminator(...)(...)` — build the discriminator once and reuse it.
+note: |
+  `Match.discriminator(field)` is a *factory*: it returns the branch matcher.
+  Calling it inline rebuilds that factory for every branch, which repeats the
+  discriminant field on every line (so a typo in one branch is invisible) and
+  buries the branch tag behind two call layers.
+
+  Hoist the factory to a single `const` and reuse it:
+
+  // ❌ Bad — the factory is rebuilt per branch
+  Match.type<UIMessageChunk>().pipe(
+    Match.withReturnType<(state: UiProtocolState) => UiProtocolStep>(),
+    Match.discriminator("type")("start", (chunk) => (state) => emit(state, chunk)),
+    Match.discriminator("type")("finish", (chunk) => (state) => drop(state)),
+  );
+
+  // ✅ Good — built once, reused
+  const byType = Match.discriminator("type");
+
+  Match.type<UIMessageChunk>().pipe(
+    Match.withReturnType<(state: UiProtocolState) => UiProtocolStep>(),
+    byType("start", (chunk) => (state) => emit(state, chunk)),
+    byType("finish", (chunk) => (state) => drop(state)),
+  );
+
+  `Match.discriminators(field)({ ... })` is not flagged: it takes every branch
+  in one object, so there is nothing to rebuild.
+rule:
+  pattern: Match.$FACTORY($$$FIELD)($$$ARGS)
+constraints:
+  FACTORY:
+    regex: "^discriminator(StartsWith)?$"

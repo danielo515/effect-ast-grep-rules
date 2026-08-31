@@ -57,6 +57,7 @@ and add ast-grep for the rules that are yours.
 | `prefer-schema-decode` | hint | `Schema.decodeUnknown*` outside trust-boundary directories |
 | `prefer-effect-gen-over-deep-flatmap` | hint | `pipe` chains with 3+ `Effect.flatMap` calls |
 | `prefer-option-from-nullable` | warning | `x ? Option.some(x) : Option.none()` ternaries — use `Option.fromNullable` |
+| `no-inline-match-discriminator` | error | inline `Match.discriminator(f)(tag, h)` — hoist the factory and reuse it |
 | `no-run-effect-in-test` | error | `Effect.run*` in test files — use `it.effect` from `@effect/vitest` |
 | `no-either-guard-assertion` | error | boolean `Either.isLeft` guards in tests — deep-assert the whole `Either` |
 

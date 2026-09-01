@@ -1,0 +1,25 @@
+id: no-underscore-log-annotations
+language: typescript
+severity: warning
+rule:
+  pattern: "Effect.annotateLogs($$$ARGS)"
+  has:
+    kind: arguments
+    has:
+      kind: object
+      has:
+        kind: pair
+        has:
+          field: key
+          regex: "^_"
+message: "Avoid underscore-prefixed keys in Effect.annotateLogs — they can collide with Effect's serialized output conventions. Use descriptive names like errorTag instead."
+note: |
+  Underscore-prefixed keys (e.g. `_tag`, `_op`) in log annotations can collide
+  with Effect's own conventions in serialized output. Use clearer, stable
+  query field names instead:
+
+  // ❌ Bad
+  Effect.annotateLogs({ _tag: error._tag, message: error.message })
+
+  // ✅ Good
+  Effect.annotateLogs({ errorTag: error._tag })

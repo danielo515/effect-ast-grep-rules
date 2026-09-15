@@ -22,10 +22,14 @@ note: |
   Compose instead of writing bigger comparators: `Order.reverse(OrderByStart)`,
   `Order.combine(OrderByStart, OrderByTitle)`, `Order.mapInput(Order.Number, f)`.
   `Arr` is the array module from `effect` (`import { Arr, Order } from "effect"`).
+
+  Only calls that pass a comparator are flagged — a bare `xs.sort()` still
+  mutates, but it is usually normalisation in a test assertion, not domain
+  ordering.
 rule:
   any:
-    - pattern: $OBJ.sort($$$ARGS)
-    - pattern: $OBJ.toSorted($$$ARGS)
+    - pattern: $OBJ.sort($CMP)
+    - pattern: $OBJ.toSorted($CMP)
 constraints:
   OBJ:
     not:

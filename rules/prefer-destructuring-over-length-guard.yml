@@ -1,0 +1,38 @@
+id: prefer-destructuring-over-length-guard
+language: TypeScript
+severity: warning
+message: >-
+  `length > 0` guard followed by `[0]` — destructure first, then narrow on `undefined`.
+note: |
+  A `length` check tells the type checker nothing: under
+  `noUncheckedIndexedAccess` the element is still `T | undefined`, so the
+  guard buys no narrowing and the index access needs an assertion to compile.
+  Without that flag it is worse — the guard is load-bearing and invisible,
+  and any later edit that drops it silently produces `undefined`.
+
+  Destructuring gets the element and the check onto the same value:
+
+  // ❌ Bad — the guard and the access are two separate facts
+  if (result.length > 0) {
+    const analysis = result[0];
+  }
+
+  // ✅ Good — one value, narrowed where it is used
+  const [analysis] = result;
+  if (analysis !== undefined) {
+  }
+
+  For a first element that may legitimately be absent, `Arr.head(result)`
+  returns an `Option` and composes with the rest of the pipeline.
+rule:
+  pattern: $ARR[0]
+  inside:
+    stopBy: end
+    any:
+      - pattern: if ($ARR.length > 0) { $$$BODY }
+      - pattern: if ($ARR.length >= 1) { $$$BODY }
+      - pattern: if ($ARR.length !== 0) { $$$BODY }
+      - pattern: if ($ARR.length != 0) { $$$BODY }
+files:
+  - "**/*.ts"
+  - "**/*.tsx"

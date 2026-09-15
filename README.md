@@ -60,6 +60,8 @@ and add ast-grep for the rules that are yours.
 | `no-inline-match-discriminator` | error | inline `Match.discriminator(f)(tag, h)` — hoist the factory and reuse it |
 | `no-run-effect-in-test` | error | `Effect.run*` in test files — use `it.effect` from `@effect/vitest` |
 | `no-either-guard-assertion` | error | boolean `Either.isLeft` guards in tests — deep-assert the whole `Either` |
+| `prefer-order-sort` | warning | native `.sort((a, b) => ...)` — use `Arr.sort` with a named `Order` |
+| `prefer-destructuring-over-length-guard` | warning | `if (xs.length > 0) { xs[0] }` — destructure, then narrow on `undefined` |
 
 Rules are plain YAML — copy the ones you want, delete the ones you don't.
 Open a rule file to see the rationale (`note:` field) — these are

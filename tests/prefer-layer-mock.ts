@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from "effect";
+import { Chunk, Context, Effect, Layer } from "effect";
 
 class Users extends Context.Tag("Users")<
   Users,
@@ -37,4 +37,14 @@ export const good1 = Layer.mock(Users, {
 // good: failing on purpose is a real behaviour, not a stub
 export const good2 = Layer.mock(Users, {
   remove: () => Effect.fail("not allowed" as const),
+});
+
+// good: `Array.of` / `Chunk.of` build collections, not services
+export const good3 = Array.of({ check: () => Effect.die("unexpected") });
+export const good4 = Chunk.of({ check: () => Effect.die("unexpected") });
+
+// good: a deliberately injected defect the test asserts on, marked as such
+// ast-grep-ignore: prefer-layer-mock
+export const good5 = Layer.mock(Users, {
+  get: () => Effect.die(new Error("user store unavailable")),
 });

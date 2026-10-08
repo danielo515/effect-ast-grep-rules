@@ -3,10 +3,10 @@ language: typescript
 severity: warning
 rule:
   kind: object
-  # Only objects that implement a service: passed to `X.of`, `Layer.succeed`,
-  # `Layer.mock` or `Effect.provideService`, or bound to a `...Service` type.
-  # A die inside any other object (a callback that must never run) is a real
-  # assertion, not a stub.
+  # Only objects that implement a service: passed to `MyService.of`,
+  # `Layer.succeed`, `Layer.mock` or `Effect.provideService`, or bound to a
+  # `...Service` type. A die inside any other object (a callback that must
+  # never run) is a real assertion, not a stub.
   any:
     - inside:
         kind: arguments
@@ -15,7 +15,12 @@ rule:
           has:
             field: function
             any:
-              - regex: \.of$
+              # A service key is a PascalCase class; `Array.of`, `Chunk.of`,
+              # typed arrays and the like build collections, not services.
+              - all:
+                  - regex: ^[A-Z]\w*\.of$
+                  - not:
+                      regex: ^(\w*Array|Chunk|Iterable|List)\.of$
               - pattern: Layer.succeed
               - pattern: Layer.succeed($$$)
               - pattern: Layer.mock
@@ -70,3 +75,13 @@ note: |
   `Layer.mock` is available since Effect 3.17. The implementation is still type-checked against the service shape, so a
   renamed or retyped method still breaks the mock at compile time. Non-Effect
   properties (plain values, constants) must still be provided.
+
+  A "must never be called" stub needs no custom message either: the
+  `UnimplementedError` already names the service and the method. Keep an
+  explicit die only when the test asserts on that exact defect (it injects a
+  failure rather than stubbing), and mark it as deliberate:
+
+  // ast-grep-ignore: prefer-layer-mock
+  const failingWorkflows = Layer.mock(AssistantWorkflowsService, {
+    getWorkflow: () => Effect.die(new Error("workflow store unavailable")),
+  });

@@ -1,0 +1,129 @@
+id: no-effect-in-plain-test
+language: typescript
+severity: error
+files:
+  - "**/*.test.ts"
+utils:
+  # `it` / `test`, or a local alias of them imported from vitest or
+  # @effect/vitest (`import { it as itEffect } from "@effect/vitest"`).
+  vitest-test-fn:
+    kind: identifier
+    any:
+      - regex: ^(it|test)$
+      - all:
+          - pattern: $ALIAS
+          - inside:
+              kind: program
+              stopBy: end
+              has:
+                kind: import_specifier
+                stopBy: end
+                all:
+                  - has: { field: name, regex: ^(it|test)$ }
+                  - has: { field: alias, pattern: $ALIAS }
+                  - inside:
+                      kind: import_statement
+                      stopBy: end
+                      has:
+                        field: source
+                        regex: ^["'](@effect/)?vitest["']$
+  # The test function plus vitest modifiers (`.only`, `.skip`,
+  # `.concurrent`, `.each(table)`, `.skipIf(cond)`, …), but never through one
+  # of the @effect/vitest members that actually run the returned Effect.
+  plain-test-callee:
+    any:
+      - matches: vitest-test-fn
+      - kind: member_expression
+        all:
+          - has: { field: object, matches: plain-test-callee }
+          - not:
+              has:
+                field: property
+                regex: ^(effect|live|scoped|scopedLive|layer|flakyTest)$
+      - kind: call_expression
+        has: { field: function, matches: plain-test-callee }
+  # Syntactically an Effect: `Effect.*`, `pipe(Effect.*, …)` or
+  # `x.pipe(…, Effect.*)`, excluding the Effect.run* family (those return a
+  # Promise/value and are covered by no-run-effect-in-test).
+  effect-expr:
+    all:
+      - any:
+          - regex: ^Effect\.
+          - pattern: pipe(Effect.$_A($$$), $$$)
+          - pattern: $_X.pipe($$$, Effect.$_A)
+          - pattern: $_X.pipe($$$, Effect.$_A($$$))
+      - not:
+          any:
+            - regex: ^Effect\.run
+            - regex: Effect\.run\w+,?\s*\)$
+  function-boundary:
+    any:
+      - kind: arrow_function
+      - kind: function_expression
+      - kind: function_declaration
+      - kind: generator_function
+      - kind: generator_function_declaration
+      - kind: method_definition
+  # A test callback that returns an Effect, either as an arrow expression
+  # body or from a `return` in its own body (not a nested function's).
+  effect-callback:
+    any:
+      - kind: arrow_function
+        has: { field: body, matches: effect-expr }
+      - all:
+          - any: [{ kind: arrow_function }, { kind: function_expression }]
+          - has:
+              field: body
+              has:
+                kind: return_statement
+                stopBy: { matches: function-boundary }
+                has: { matches: effect-expr }
+rule:
+  kind: call_expression
+  all:
+    - has: { field: function, matches: plain-test-callee, pattern: $TEST }
+    - has:
+        field: arguments
+        has: { matches: effect-callback, pattern: $CALLBACK }
+labels:
+  TEST:
+    style: primary
+    message: plain vitest test function
+  CALLBACK:
+    style: secondary
+    message: returns an Effect that is never run
+message: "Plain it/test callback returns an Effect that never runs — use it.effect"
+note: |
+  Plain `it`/`test` — from vitest, and also the `it` exported by
+  @effect/vitest, which is vitest's own `it` — ignores the returned Effect.
+  The body never executes and the test passes vacuously: assertions,
+  failures, and even a test layer that doesn't provide the service under
+  test all go unnoticed. Register it with `it.effect` so the runner executes
+  the Effect:
+
+  // ❌ Bad
+  import { it as itEffect } from "@effect/vitest";
+  itEffect("creates a user", () =>
+    Effect.gen(function* () {
+      const users = yield* Users;
+      expect((yield* users.create({ name: "Ada" })).name).toBe("Ada");
+    }),
+  );
+
+  // ✅ Good
+  import { it } from "@effect/vitest";
+  it.effect("creates a user", () =>
+    Effect.gen(function* () {
+      const users = yield* Users;
+      expect((yield* users.create({ name: "Ada" })).name).toBe("Ada");
+    }),
+  );
+
+  // ✅ Good — the `it` handed in by layer(...) is called the same way
+  layer(TestLayer)("Users", (it) => {
+    it.effect("creates a user", () => Effect.gen(function* () { ... }));
+  });
+
+  `it.scoped`, `it.live`, `it.scopedLive` and `it.layer` also run Effects.
+  Detection is syntactic: a callback returning an Effect held in a variable
+  or built from another module (`() => program`) is not caught.

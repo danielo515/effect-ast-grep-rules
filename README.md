@@ -59,6 +59,7 @@ and add ast-grep for the rules that are yours.
 | `prefer-option-from-nullable` | warning | `x ? Option.some(x) : Option.none()` ternaries — use `Option.fromNullable` |
 | `no-inline-match-discriminator` | error | inline `Match.discriminator(f)(tag, h)` — hoist the factory and reuse it |
 | `no-run-effect-in-test` | error | `Effect.run*` in test files — use `it.effect` from `@effect/vitest` |
+| `no-effect-in-plain-test` | error | plain `it`/`test` callbacks returning an Effect (never run) — use `it.effect` |
 | `no-either-guard-assertion` | error | boolean `Either.isLeft` guards in tests — deep-assert the whole `Either` |
 | `prefer-order-sort` | warning | native `.sort((a, b) => ...)` — use `Arr.sort` with a named `Order` |
 | `prefer-destructuring-over-length-guard` | warning | `if (xs.length > 0) { xs[0] }` — destructure, then narrow on `undefined` |

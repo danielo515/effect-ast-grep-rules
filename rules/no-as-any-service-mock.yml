@@ -30,6 +30,7 @@ note: |
     }),
   );
 
-  Methods you do not exercise can still be stubbed with `Effect.die("unused")`
-  — the point is that the constructor makes a service change break the mock
-  at compile time.
+  The point is that the constructor makes a service change break the mock
+  at compile time. If most methods are unused, don't stub them with
+  `Effect.die` — use `Layer.mock(MiliaMessagesService, { ... })` with only the
+  methods the test exercises (see `prefer-layer-mock`).

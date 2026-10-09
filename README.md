@@ -63,6 +63,7 @@ and add ast-grep for the rules that are yours.
 | `no-either-guard-assertion` | error | boolean `Either.isLeft` guards in tests — deep-assert the whole `Either` |
 | `prefer-order-sort` | warning | native `.sort((a, b) => ...)` — use `Arr.sort` with a named `Order` |
 | `prefer-destructuring-over-length-guard` | warning | `if (xs.length > 0) { xs[0] }` — destructure, then narrow on `undefined` |
+| `prefer-layer-mock` | warning | service mocks padded with `() => Effect.die("unused")` stubs — use `Layer.mock` |
 
 Rules are plain YAML — copy the ones you want, delete the ones you don't.
 Open a rule file to see the rationale (`note:` field) — these are

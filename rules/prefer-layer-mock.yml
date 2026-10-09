@@ -1,0 +1,87 @@
+id: prefer-layer-mock
+language: typescript
+severity: warning
+rule:
+  kind: object
+  # Only objects that implement a service: passed to `MyService.of`,
+  # `Layer.succeed`, `Layer.mock` or `Effect.provideService`, or bound to a
+  # `...Service` type. A die inside any other object (a callback that must
+  # never run) is a real assertion, not a stub.
+  any:
+    - inside:
+        kind: arguments
+        inside:
+          kind: call_expression
+          has:
+            field: function
+            any:
+              # A service key is a PascalCase class; `Array.of`, `Chunk.of`,
+              # typed arrays and the like build collections, not services.
+              - all:
+                  - regex: ^[A-Z]\w*\.of$
+                  - not:
+                      regex: ^(\w*Array|Chunk|Iterable|List)\.of$
+              - pattern: Layer.succeed
+              - pattern: Layer.succeed($$$)
+              - pattern: Layer.mock
+              - pattern: Effect.provideService
+    - inside:
+        kind: variable_declarator
+        has:
+          field: type
+          regex: Service
+  has:
+    kind: pair
+    has:
+      field: value
+      any:
+        # `method: () => Effect.die("unused")`
+        - kind: arrow_function
+          has:
+            field: body
+            matches: effect-die
+        # `effectProp: Effect.die("unused")`
+        - matches: effect-die
+utils:
+  effect-die:
+    any:
+      - pattern: Effect.die($$$)
+      - pattern: Effect.dieMessage($$$)
+message: "Hand-rolled partial service with `Effect.die` stubs — use Layer.mock and omit the unused methods"
+note: |
+  Stubbing every method a test does not exercise with `Effect.die("unused")`
+  is noise: the mock has to list the whole service, and every new method
+  added to the service forces an edit to every mock. `Layer.mock` takes a
+  partial implementation and makes any omitted Effect-returning method die
+  with an `UnimplementedError` when called, which is exactly what the stubs
+  were doing by hand:
+
+  // ❌ Bad
+  const workflowsLayer = Layer.succeed(
+    AssistantWorkflowsService,
+    new AssistantWorkflowsService({
+      getWorkflow: (params) => Effect.succeed(workflowResponse(params.workflowId)),
+      listWorkflows: () => Effect.die("unused"),
+      createWorkflow: () => Effect.die("unused"),
+      deleteWorkflow: () => Effect.die("unused"),
+    }),
+  );
+
+  // ✅ Good
+  const workflowsLayer = Layer.mock(AssistantWorkflowsService, {
+    getWorkflow: (params) => Effect.succeed(workflowResponse(params.workflowId)),
+  });
+
+  `Layer.mock` is available since Effect 3.17. The implementation is still type-checked against the service shape, so a
+  renamed or retyped method still breaks the mock at compile time. Non-Effect
+  properties (plain values, constants) must still be provided.
+
+  A "must never be called" stub needs no custom message either: the
+  `UnimplementedError` already names the service and the method. Keep an
+  explicit die only when the test asserts on that exact defect (it injects a
+  failure rather than stubbing), and mark it as deliberate:
+
+  // ast-grep-ignore: prefer-layer-mock
+  const failingWorkflows = Layer.mock(AssistantWorkflowsService, {
+    getWorkflow: () => Effect.die(new Error("workflow store unavailable")),
+  });

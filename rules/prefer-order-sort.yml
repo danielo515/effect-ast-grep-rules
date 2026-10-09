@@ -1,0 +1,39 @@
+id: prefer-order-sort
+language: TypeScript
+severity: warning
+message: >-
+  Native `Array.prototype.sort` with an ad-hoc comparator — use `Arr.sort` with an `Order`.
+note: |
+  A hand-written comparator is an unnamed, untyped, untestable lambda: its
+  contract (negative / zero / positive) lives in your head, it cannot be
+  reused or composed, and `sort` mutates the array in place — which is why
+  this pattern usually drags a defensive `[...xs]` along with it.
+
+  `Order` makes the comparison a first-class, named value you can reuse,
+  reverse, and combine, and `Arr.sort` returns a new array.
+
+  // ❌ Bad — inline comparator, mutation dodged by copying
+  const sorted = [...events].sort((a, b) => a.start.localeCompare(b.start));
+
+  // ✅ Good — the ordering is a value
+  const OrderByStart = Order.mapInput(Order.String, (e: CalendarEvent) => e.start);
+  const sorted = Arr.sort(events, OrderByStart);
+
+  Compose instead of writing bigger comparators: `Order.reverse(OrderByStart)`,
+  `Order.combine(OrderByStart, OrderByTitle)`, `Order.mapInput(Order.Number, f)`.
+  `Arr` is the array module from `effect` (`import { Arr, Order } from "effect"`).
+
+  Only calls that pass a comparator are flagged — a bare `xs.sort()` still
+  mutates, but it is usually normalisation in a test assertion, not domain
+  ordering.
+rule:
+  any:
+    - pattern: $OBJ.sort($CMP)
+    - pattern: $OBJ.toSorted($CMP)
+constraints:
+  OBJ:
+    not:
+      regex: '^(Arr|Array|ReadonlyArray|Chunk|List)$'
+files:
+  - "**/*.ts"
+  - "**/*.tsx"
